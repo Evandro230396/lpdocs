@@ -1,0 +1,630 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LP Docs - Painel Administrativo</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+        .back-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-btn:hover {
+            background-color: #5a6268;
+        }
+        .stats-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+        .stat-card.completed {
+            border-left-color: #28a745;
+        }
+        .stat-card.pending {
+            border-left-color: #ffc107;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .envelopes-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filter-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .envelope-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .envelope-table th,
+        .envelope-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .envelope-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        .envelope-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .action-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        .action-btn.delete {
+            background-color: #dc3545;
+        }
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .signatory-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #007bff;
+        }
+        .signatory-signed {
+            border-left-color: #28a745;
+        }
+        .signatory-pending {
+            border-left-color: #ffc107;
+        }
+        .signatory-copy {
+            border-left-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>LP Docs - Painel Administrativo</h1>
+                <p style="margin: 5px 0 0 0; color: #666;">Gerenciar envelopes de assinatura</p>
+            </div>
+            <a href="/" class="back-btn">← Voltar</a>
+        </div>
+
+        <div class="stats-panel">
+            <h3 style="margin-top: 0;">Estatísticas</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEnvelopes">0</div>
+                    <div class="stat-label">Total de Envelopes</div>
+                </div>
+                <div class="stat-card completed">
+                    <div class="stat-number" id="completedEnvelopes">0</div>
+                    <div class="stat-label">Envelopes Completos</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-number" id="pendingEnvelopes">0</div>
+                    <div class="stat-label">Envelopes Pendentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSignatures">0</div>
+                    <div class="stat-label">Total de Assinaturas</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="envelopes-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">Envelopes</h3>
+                <button onclick="refreshData()" class="action-btn">🔄 Atualizar</button>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterEnvelopes('all')">Todos</button>
+                <button class="filter-btn" onclick="filterEnvelopes('completed')">Completos</button>
+                <button class="filter-btn" onclick="filterEnvelopes('pending')">Pendentes</button>
+            </div>
+
+            <div id="loading" class="loading" style="display: none;">
+                Carregando envelopes...
+            </div>
+
+            <div id="error" class="error" style="display: none;"></div>
+
+            <table class="envelope-table" id="envelopeTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Data de Criação</th>
+                        <th>Status</th>
+                        <th>Signatários</th>
+                        <th>Progresso</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="envelopeTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for envelope details -->
+    <div id="envelopeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalContent">
+                <!-- Modal content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let envelopesData = [];
+        let currentFilter = 'all';
+
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Data não disponível';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return 'Data inválida';
+                }
+                
+                return date.toLocaleString('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                console.error('Erro ao formatar data:', error);
+                return 'Erro na data';
+            }
+        };
+
+        const loadEnvelopes = async () => {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('envelopeTable').style.display = 'none';
+
+                const response = await fetch('/api/debug/signatures');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar dados');
+                }
+
+                envelopesData = data.envelopes || [];
+                updateStats(data);
+                displayEnvelopes();
+
+            } catch (error) {
+                console.error('Erro ao carregar envelopes:', error);
+                document.getElementById('error').textContent = 'Erro ao carregar envelopes: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        };
+
+        const updateStats = (data) => {
+            const totalEnvelopes = data.envelopes ? data.envelopes.length : 0;
+            const completedEnvelopes = data.envelopes ? data.envelopes.filter(e => e.status === 'completed').length : 0;
+            const pendingEnvelopes = totalEnvelopes - completedEnvelopes;
+            const totalSignatures = data.totalSignatures || 0;
+
+            document.getElementById('totalEnvelopes').textContent = totalEnvelopes;
+            document.getElementById('completedEnvelopes').textContent = completedEnvelopes;
+            document.getElementById('pendingEnvelopes').textContent = pendingEnvelopes;
+            document.getElementById('totalSignatures').textContent = totalSignatures;
+        };
+
+        const displayEnvelopes = () => {
+            const tableBody = document.getElementById('envelopeTableBody');
+            const table = document.getElementById('envelopeTable');
+
+            if (envelopesData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">Nenhum envelope encontrado</td></tr>';
+                table.style.display = 'table';
+                return;
+            }
+
+            // Filter envelopes based on current filter
+            let filteredEnvelopes = envelopesData;
+            if (currentFilter !== 'all') {
+                filteredEnvelopes = envelopesData.filter(envelope => envelope.status === currentFilter);
+            }
+
+            // Sort by creation date (newest first)
+            filteredEnvelopes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            tableBody.innerHTML = '';
+
+            filteredEnvelopes.forEach(envelope => {
+                console.log('Envelope data:', envelope); // Debug log
+                
+                const row = document.createElement('tr');
+                
+                const statusClass = envelope.status === 'completed' ? 'status-completed' : 'status-pending';
+                const statusText = envelope.status === 'completed' ? 'Completo' : 'Pendente';
+                
+                const signatoriesCount = envelope.signatoriesCount || 0;
+                // For progress, we'll need to fetch detailed envelope data
+                const progress = `${signatoriesCount} signatário(s)`;
+                
+                // Debug the createdAt field
+                console.log('createdAt for envelope', envelope.id, ':', envelope.createdAt);
+                const formattedDate = formatDate(envelope.createdAt);
+                console.log('Formatted date:', formattedDate);
+
+                row.innerHTML = `
+                    <td>
+                        <strong>${envelope.title || 'Sem título'}</strong><br>
+                        <small style="color: #666;">ID: ${envelope.id.substring(0, 8)}...</small>
+                    </td>
+                    <td>${formattedDate}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${progress}</td>
+                    <td>
+                        <div style="background-color: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
+                            <div style="background-color: ${envelope.status === 'completed' ? '#28a745' : '#ffc107'}; height: 100%; width: ${envelope.status === 'completed' ? '100' : '50'}%;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="action-btn" onclick="viewEnvelope('${envelope.id}')">👁️ Ver</button>
+                        ${envelope.status === 'pending' ? 
+                            `<button class="action-btn" style="background-color: #ffc107;" onclick="resendEnvelope('${envelope.id}')">🔄 Reenviar</button>` : 
+                            `<button class="action-btn" style="background-color: #28a745;" onclick="downloadEnvelope('${envelope.id}')">📥 Download</button>`
+                        }
+                        <button class="action-btn delete" onclick="deleteEnvelope('${envelope.id}')">🗑️ Excluir</button>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+
+            table.style.display = 'table';
+        };
+
+        const filterEnvelopes = (filter) => {
+            currentFilter = filter;
+
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            displayEnvelopes();
+        };
+
+        const viewEnvelope = async (envelopeId) => {
+            try {
+                const response = await fetch(`/api/envelope/${envelopeId}/details`);
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar detalhes do envelope');
+                }
+                
+                const envelope = await response.json();
+                
+                const modalContent = document.getElementById('modalContent');
+                
+                // Build signatories section
+                let signatoriesHtml = '';
+                if (envelope.signatories && envelope.signatories.length > 0) {
+                    signatoriesHtml = envelope.signatories.map(sig => {
+                        const statusClass = sig.status === 'signed' ? 'signatory-signed' : 
+                                          sig.type === 'copy' ? 'signatory-copy' : 'signatory-pending';
+                        const statusText = sig.status === 'signed' ? 'ASSINADO' : 
+                                         sig.type === 'copy' ? 'CÓPIA' : 'PENDENTE';
+                        
+                        let signatoryInfo = `
+                            <div class="signatory-item ${statusClass}">
+                                <strong>${sig.name}</strong> (${sig.email})<br>
+                                <small><strong>Tipo:</strong> ${sig.role}</small><br>
+                                <small><strong>Status:</strong> ${statusText}</small>`;
+                        
+                        if (sig.signedAt) {
+                            signatoryInfo += `<br><small><strong>Assinado em:</strong> ${formatDate(sig.signedAt)}</small>`;
+                        }
+                        
+                        if (sig.signerIP) {
+                            signatoryInfo += `<br><small><strong>IP:</strong> ${sig.signerIP}</small>`;
+                        }
+                        
+                        if (envelope.positionsPerSignatory && envelope.positionsPerSignatory[sig.email]) {
+                            signatoryInfo += `<br><small><strong>Posições de assinatura:</strong> ${envelope.positionsPerSignatory[sig.email]}</small>`;
+                        }
+                        
+                        signatoryInfo += `</div>`;
+                        return signatoryInfo;
+                    }).join('');
+                } else {
+                    signatoriesHtml = '<p style="color: #666;">Nenhum signatário encontrado</p>';
+                }
+                
+                // Build events section
+                let eventsHtml = '';
+                if (envelope.events && envelope.events.length > 0) {
+                    eventsHtml = envelope.events.map(event => {
+                        const eventDate = formatDate(event.timestamp);
+                        let eventInfo = `<li><strong>${eventDate}</strong> - ${event.description}`;
+                        
+                        if (event.ip) {
+                            eventInfo += `<br><small style="color: #666;">IP: ${event.ip}</small>`;
+                        }
+                        
+                        if (event.signatory) {
+                            eventInfo += `<br><small style="color: #666;">Signatário: ${event.signatory} (${event.email})</small>`;
+                        }
+                        
+                        eventInfo += '</li>';
+                        return eventInfo;
+                    }).join('');
+                    eventsHtml = `<ul style="padding-left: 20px;">${eventsHtml}</ul>`;
+                } else {
+                    eventsHtml = '<p style="color: #666;">Nenhum evento registrado</p>';
+                }
+
+                modalContent.innerHTML = `
+                    <h2>📋 Detalhes Completos do Envelope</h2>
+                    
+                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 10px 0; color: #333;">ℹ️ Informações Básicas</h3>
+                        <p><strong>ID:</strong> ${envelope.id}</p>
+                        <p><strong>Título:</strong> ${envelope.title || 'Sem título'}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${envelope.status === 'completed' ? 'status-completed' : 'status-pending'}">${envelope.status === 'completed' ? 'Completo' : 'Pendente'}</span></p>
+                        <p><strong>Data de Criação:</strong> ${formatDate(envelope.createdAt)}</p>
+                        <p><strong>IP do Criador:</strong> ${envelope.creatorIP || 'Não disponível'}</p>
+                        <p><strong>Total de Participantes:</strong> ${envelope.signatories ? envelope.signatories.length : 0}</p>
+                        <p><strong>Assinaturas Coletadas:</strong> ${envelope.completedSignatures || 0} de ${envelope.signatories ? envelope.signatories.filter(s => s.type === 'signer').length : 0}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 15px 0; color: #333;">👥 Participantes do Envelope</h3>
+                        ${signatoriesHtml}
+                    </div>
+                    
+                    <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 15px 0; color: #333;">📅 Histórico de Eventos</h3>
+                        ${eventsHtml}
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        ${envelope.status === 'completed' ? 
+                            `<button class="action-btn" style="background-color: #28a745;" onclick="downloadEnvelope('${envelope.id}')">📥 Download PDF Assinado</button>` : 
+                            `<button class="action-btn" style="background-color: #ffc107;" onclick="resendEnvelope('${envelope.id}')">🔄 Reenviar Emails</button>`
+                        }
+                        <button class="action-btn delete" onclick="deleteEnvelope('${envelope.id}'); closeModal();">🗑️ Excluir Envelope</button>
+                    </div>
+                `;
+
+                document.getElementById('envelopeModal').style.display = 'block';
+
+            } catch (error) {
+                alert('Erro ao carregar detalhes do envelope: ' + error.message);
+            }
+        };
+
+        const deleteEnvelope = async (envelopeId) => {
+            if (!confirm('Tem certeza que deseja excluir este envelope? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/envelope/${envelopeId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Envelope excluído com sucesso!');
+                    loadEnvelopes(); // Reload the list
+                } else {
+                    alert('❌ Erro ao excluir envelope: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Erro ao excluir envelope: ' + error.message);
+            }
+        };
+
+        const resendEnvelope = async (envelopeId) => {
+            if (!confirm('Deseja reenviar os emails de assinatura para os signatários pendentes?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/envelope/${envelopeId}/resend`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ ${result.emailsSent} email(s) reenviado(s) com sucesso!\n\nTotal pendente: ${result.totalPending}`);
+                } else {
+                    alert('❌ Erro ao reenviar emails: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Erro ao reenviar emails: ' + error.message);
+            }
+        };
+
+        const downloadEnvelope = async (envelopeId) => {
+            try {
+                // Create a temporary link to download the file
+                const downloadUrl = `/api/envelope/${envelopeId}/download-pdf`;
+                
+                // Create a temporary anchor element and trigger download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch (error) {
+                alert('❌ Erro ao fazer download: ' + error.message);
+            }
+        };
+
+        const closeModal = () => {
+            document.getElementById('envelopeModal').style.display = 'none';
+        };
+
+        const refreshData = () => {
+            loadEnvelopes();
+        };
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('envelopeModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadEnvelopes);
+    </script>
+</body>
+</html>

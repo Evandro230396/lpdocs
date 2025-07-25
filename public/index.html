@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LP Docs - Assinatura Digital</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: white;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        .upload-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .upload-btn:hover {
+            background-color: #0056b3;
+        }
+        .pdf-viewer {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .pdf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .control-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .control-btn:hover {
+            background-color: #5a6268;
+        }
+        .control-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .page-info {
+            font-weight: bold;
+        }
+        .pdf-canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            max-width: 100%;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+        }
+        .signature-panel {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .signature-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .signature-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .signature-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .signature-btn:hover {
+            background-color: #218838;
+        }
+        .signature-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .signature-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .pdf-container-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .signature-overlay {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.3);
+            border: 2px solid #ffc107;
+            border-radius: 3px;
+            cursor: move;
+            padding: 5px;
+            font-size: 12px;
+            color: #333;
+            min-width: 150px;
+            z-index: 10;
+        }
+        .signature-overlay.placing {
+            background-color: rgba(0, 123, 255, 0.3);
+            border-color: #007bff;
+        }
+        .envelope-panel {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .envelope-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .signatory-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .signatory-input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .remove-signatory {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .envelope-btn {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .envelope-btn:hover {
+            background-color: #1976d2;
+        }
+        .envelope-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .envelope-mode .signature-overlay {
+            background-color: rgba(33, 150, 243, 0.3);
+            border-color: #2196f3;
+        }
+        .signature-assignment {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background-color: #2196f3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        .signature-remove-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: rgba(220, 53, 69, 0.8); /* Red-ish background */
+            color: white;
+            border-radius: 50%; /* Make it circular */
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px; /* Vertically center the text */
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 11; /* Ensure it's above the signature */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Optional shadow for better visibility */
+        }
+
+        .signature-remove-btn:hover {
+            background-color: rgba(220, 53, 69, 1); /* Darken on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: #333;">LP Docs</h1>
+        <p style="text-align: center; color: #666; font-style: italic; margin-top: -10px; margin-bottom: 30px;">Sua aprovação digital sem burocracia</p>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="/admin" style="background-color: #6c757d; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-size: 14px;">
+                📊 Painel Administrativo
+            </a>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Arraste um arquivo PDF aqui ou clique para selecionar</p>
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Selecionar PDF
+            </button>
+        </div>
+
+        <div id="pdfViewer" class="pdf-viewer" style="display: none;">
+            <div class="envelope-panel" id="envelopePanel">
+                <h3 style="margin: 0 0 10px 0;">🚀 Criar Envelope para Assinatura</h3>
+                <div class="envelope-controls">
+                    <input type="text" id="envelopeTitle" class="signature-input" placeholder="Título do documento (opcional)">
+
+                    <div id="signatoriesList">
+                        <h4 style="margin: 10px 0 5px 0;">Signatários:</h4>
+                        <div class="signatory-item">
+                            <input type="text" class="signatory-input signatory-name" placeholder="Nome do signatário">
+                            <input type="email" class="signatory-input signatory-email" placeholder="Email do signatário">
+                            <select class="signatory-input signatory-type">
+                                <option value="signer">Assinar documento</option>
+                                <option value="copy">Apenas receber cópia</option>
+                            </select>
+                            <button class="remove-signatory" onclick="removeSignatory(this)">✕</button>
+                        </div>
+                    </div>
+
+                    <button class="envelope-btn" id="addSignatoryBtn">+ Adicionar Signatário</button>
+                    <button class="envelope-btn" id="toggleEnvelopeModeBtn">Definir Posições de Assinatura</button>
+                    <button class="envelope-btn" id="clearEnvelopePositionsBtn" style="background-color: #dc3545;">Limpar Posições</button>
+                    <button class="envelope-btn" id="createEnvelopeBtn" style="background-color: #4caf50;">📧 Criar e Enviar Envelope</button>
+                </div>
+
+                <div id="envelopeInfo" class="signature-info" style="display: none;">
+                    <strong>Modo Envelope:</strong> Clique no PDF para definir onde cada signatário deve assinar.<br>
+                    <small>💡 Para remover posição: clique no ✕ vermelho, clique duplo ou clique com botão direito na posição</small>
+                </div>
+            </div>
+
+
+
+            <div class="pdf-controls">
+                <button class="control-btn" id="prevBtn">← Anterior</button>
+                <span class="page-info" id="pageInfo">Página 1 de 1</span>
+                <button class="control-btn" id="nextBtn">Próxima →</button>
+                <button class="control-btn" id="zoomOutBtn">-</button>
+                <span id="zoomLevel">100%</span>
+                <button class="control-btn" id="zoomInBtn">+</button>
+            </div>
+            <div id="pdfContainer" class="pdf-container-wrapper">
+                <canvas id="pdfCanvas" class="pdf-canvas"></canvas>
+            </div>
+        </div></div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Carregando PDF...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Verificar autenticação
+        const checkAuth = () => {
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                window.location.href = '/login';
+                return false;
+            }
+            
+            // Verificar se token ainda é válido
+            fetch('/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Atualizar informações do usuário na página
+                    const userInfo = document.createElement('div');
+                    userInfo.style.cssText = 'position: fixed; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 12px; z-index: 1000;';
+                    userInfo.innerHTML = `
+                        <strong>👤 ${data.user.name}</strong><br>
+                        <small>${data.user.email} (${data.user.role})</small><br>
+                        <button onclick="logout()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 5px;">Sair</button>
+                    `;
+                    document.body.appendChild(userInfo);
+                }
+            })
+            .catch(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            });
+            
+            return true;
+        };
+
+        // Função de logout
+        const logout = async () => {
+            const token = localStorage.getItem('authToken');
+            
+            if (token) {
+                try {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                } catch (error) {
+                    console.log('Erro no logout:', error);
+                }
+            }
+            
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        };
+
+        // Verificar autenticação ao carregar a página
+        if (!checkAuth()) {
+            // Se não autenticado, a página será redirecionada
+        }
+
+        // Função para incluir token nas requisições
+        const fetchWithAuth = (url, options = {}) => {
+            const token = localStorage.getItem('authToken');
+            
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            return fetch(url, options);
+        };
+
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageIsRendering = false;
+        let pageNumIsPending = null;
+        let scale = 1.0;
+        let envelopeMode = false;
+        let signaturePositions = [];
+        let currentSignatoryIndex = 0;
+
+        const canvas = document.getElementById('pdfCanvas');
+        const ctx = canvas.getContext('2d');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const pageInfo = document.getElementById('pageInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomLevel = document.getElementById('zoomLevel');
+        const pdfContainer = document.getElementById('pdfContainer');
+
+        // Envelope elements
+        const envelopePanel = document.getElementById('envelopePanel');
+        const envelopeTitle = document.getElementById('envelopeTitle');
+        const signatoriesList = document.getElementById('signatoriesList');
+        const addSignatoryBtn = document.getElementById('addSignatoryBtn');
+        const toggleEnvelopeModeBtn = document.getElementById('toggleEnvelopeModeBtn');
+        const createEnvelopeBtn = document.getElementById('createEnvelopeBtn');
+        const envelopeInfo = document.getElementById('envelopeInfo');
+
+        // Render the page
+        const renderPage = num => {
+            pageIsRendering = true;
+
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: ctx,
+                    viewport
+                };
+
+                page.render(renderCtx).promise.then(() => {
+                    pageIsRendering = false;
+
+                    if (pageNumIsPending !== null) {
+                        renderPage(pageNumIsPending);
+                        pageNumIsPending = null;
+                    }
+                });
+
+                // Update page info
+                pageInfo.textContent = `Página ${num} de ${pdfDoc.numPages}`;
+
+                // Update button states
+                prevBtn.disabled = (num <= 1);
+                nextBtn.disabled = (num >= pdfDoc.numPages);
+            });
+        };
+
+        // Queue render
+        const queueRenderPage = num => {
+            if (pageIsRendering) {
+                pageNumIsPending = num;
+            } else {
+                renderPage(num);
+            }
+        };
+
+        // Show previous page
+        const showPrevPage = () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        };
+
+        // Show next page
+        const showNextPage = () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        };
+
+        // Zoom functions
+        const zoomIn = () => {
+            scale += 0.2;
+            zoomLevel.textContent = Math.round(scale * 100) + '%';
+            queueRenderPage(pageNum);
+        };
+
+        const zoomOut = () => {
+            if (scale <= 0.4) return;
+            scale -= 0.2;
+            zoomLevel.textContent = Math.round(scale * 100) + '%';
+            queueRenderPage(pageNum);
+        };
+
+
+
+        // Event listeners
+        prevBtn.addEventListener('click', showPrevPage);
+        nextBtn.addEventListener('click', showNextPage);
+        zoomInBtn.addEventListener('click', zoomIn);
+        zoomOutBtn.addEventListener('click', zoomOut);
+
+
+
+        // Envelope functions
+        const addSignatory = () => {
+            const signatoryItem = document.createElement('div');
+            signatoryItem.className = 'signatory-item';
+            signatoryItem.innerHTML = `
+                <input type="text" class="signatory-input signatory-name" placeholder="Nome do signatário">
+                <input type="email" class="signatory-input signatory-email" placeholder="Email do signatário">
+                <select class="signatory-input signatory-type">
+                    <option value="signer">Assinar documento</option>
+                    <option value="copy">Apenas receber cópia</option>
+                </select>
+                <button class="remove-signatory" onclick="removeSignatory(this)">✕</button>
+            `;
+            signatoriesList.appendChild(signatoryItem);
+        };
+
+        const removeSignatory = (button) => {
+            button.parentElement.remove();
+        };
+
+        const getSignatories = () => {
+            const signatoryItems = document.querySelectorAll('.signatory-item');
+            const signatories = [];
+
+            signatoryItems.forEach(item => {
+                const name = item.querySelector('.signatory-name').value.trim();
+                const email = item.querySelector('.signatory-email').value.trim();
+                const type = item.querySelector('.signatory-type').value;
+                if (name && email) {
+                    signatories.push({ name, email, type });
+                }
+            });
+
+            return signatories;
+        };
+
+        const toggleEnvelopeMode = () => {
+            envelopeMode = !envelopeMode;
+
+            if (envelopeMode) {
+                const signatories = getSignatories();
+                const signers = signatories.filter(s => s.type === 'signer');
+                if (signers.length === 0) {
+                    alert('Adicione pelo menos um signatário que precisa assinar antes de definir as posições.');
+                    envelopeMode = false;
+                    return;
+                }
+
+                envelopeInfo.style.display = 'block';
+                toggleEnvelopeModeBtn.textContent = 'Sair do Modo Envelope';
+                toggleEnvelopeModeBtn.style.backgroundColor = '#dc3545';
+                canvas.style.cursor = 'crosshair';
+                pdfContainer.classList.add('envelope-mode');
+                currentSignatoryIndex = 0;
+                updateEnvelopeInfo();
+            } else {
+                envelopeInfo.style.display = 'none';
+                toggleEnvelopeModeBtn.textContent = 'Definir Posições de Assinatura';
+                toggleEnvelopeModeBtn.style.backgroundColor = '#2196f3';
+                canvas.style.cursor = 'default';
+                pdfContainer.classList.remove('envelope-mode');
+            }
+        };
+
+        const updateEnvelopeInfo = () => {
+            const signatories = getSignatories();
+            const signers = signatories.filter(s => s.type === 'signer');
+            const copyRecipients = signatories.filter(s => s.type === 'copy');
+
+            if (signatories.length === 0) {
+                envelopeInfo.innerHTML = "Nenhum signatário adicionado.";
+                return;
+            }
+
+            const totalPositions = signaturePositions.length;
+            const positionsPerSignatory = {};
+
+            signers.forEach(sig => {
+                positionsPerSignatory[sig.email] = signaturePositions.filter(pos => pos.signatoryEmail === sig.email).length;
+            });
+
+            let signersStatus = signers.map(sig => `${sig.name}: ${positionsPerSignatory[sig.email] || 0} posições`).join(' | ');
+            let copyStatus = copyRecipients.length > 0 ? ` | ${copyRecipients.length} recebedor(es) de cópia` : '';
+
+            envelopeInfo.innerHTML = `
+                <strong>Modo Envelope:</strong> Clique no PDF para adicionar posições de assinatura.<br>
+                <strong>Assinantes:</strong> ${signersStatus || 'Nenhum'}<br>
+                <strong>Receptores de cópia:</strong> ${copyRecipients.map(c => c.name).join(', ') || 'Nenhum'}<br>
+                <small>Total de posições: ${totalPositions}</small>
+            `;
+        };
+
+        const addEnvelopeSignaturePosition = (x, y) => {
+            const signatories = getSignatories();
+            const signers = signatories.filter(s => s.type === 'signer');
+
+            if (signers.length === 0) {
+                alert('Adicione pelo menos um signatário que precisa assinar antes de definir posições.');
+                return;
+            }
+
+            // If multiple signers, ask which one
+            let selectedSignatory;
+            if (signers.length > 1) {
+                const signatoryOptions = signers.map((sig, index) => 
+                    `${index + 1}. ${sig.name} (${sig.email}) - Assinar`
+                ).join('\n');
+
+                const choice = prompt(
+                    `Para qual signatário esta posição de assinatura?\n\n${signatoryOptions}\n\nDigite o número (1-${signers.length}):`
+                );
+
+                const choiceIndex = parseInt(choice) - 1;
+                if (isNaN(choiceIndex) || choiceIndex < 0 || choiceIndex >= signers.length) {
+                    alert('Seleção inválida. Tente novamente.');
+                    return;
+                }
+
+                selectedSignatory = signers[choiceIndex];
+            } else {
+                selectedSignatory = signers[0];
+            }
+
+            const position = {
+                id: Date.now() + Math.random(), // Add unique ID for removal
+                x: x,
+                y: y,
+                page: pageNum,
+                signatoryEmail: selectedSignatory.email,
+                signatoryName: selectedSignatory.name
+            };
+
+            signaturePositions.push(position);
+
+            // Create visual indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'signature-overlay';
+            indicator.id = `envelope_pos_${position.id}`;
+
+            // Count how many signatures this signatory already has on this page
+            const signatoryPositionsOnPage = signaturePositions.filter(pos => 
+                pos.signatoryEmail === selectedSignatory.email && pos.page === pageNum
+            ).length;
+
+            indicator.innerHTML = `
+                <div class="signature-assignment">
+                    <strong>${selectedSignatory.name}</strong><br>
+                    <small>Assinatura ${signatoryPositionsOnPage}</small>
+                </div>
+                <div class="signature-remove-btn" title="Remover posição de assinatura">✕</div>
+            `;
+            indicator.style.left = x + 'px';
+            indicator.style.top = y + 'px';
+
+            // Add removal functionality
+            const removeBtn = indicator.querySelector('.signature-remove-btn');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Tem certeza que deseja remover esta posição de assinatura?')) {
+                    const index = signaturePositions.findIndex(pos => pos.id === position.id);
+                    if (index > -1) {
+                        signaturePositions.splice(index, 1);
+                        indicator.remove();
+                        updateEnvelopeInfo();
+                    }
+                }
+            });
+
+            // Double click to remove
+            indicator.addEventListener('dblclick', () => {
+                if (confirm('Tem certeza que deseja remover esta posição de assinatura?')) {
+                    const index = signaturePositions.findIndex(pos => pos.id === position.id);
+                    if (index > -1) {
+                        signaturePositions.splice(index, 1);
+                        indicator.remove();
+                        updateEnvelopeInfo();
+                    }
+                }
+            });
+
+            // Right click context menu for removal
+            indicator.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (confirm('Remover esta posição de assinatura?')) {
+                    const index = signaturePositions.findIndex(pos => pos.id === position.id);
+                    if (index > -1) {
+                        signaturePositions.splice(index, 1);
+                        indicator.remove();
+                        updateEnvelopeInfo();
+                    }
+                }
+            });
+
+            pdfContainer.appendChild(indicator);
+
+            // Ask if user wants to add more positions
+            if (signatories.length > 1 || confirm('Deseja adicionar mais uma posição de assinatura?')) {
+                updateEnvelopeInfo();
+            } else {
+                // Check if all signatories have at least one position
+                const signatoriesWithPositions = new Set(signaturePositions.map(pos => pos.signatoryEmail));
+                const allSignatoriesHavePositions = signatories.every(sig => signatoriesWithPositions.has(sig.email));
+
+                if (allSignatoriesHavePositions) {
+                    alert('Posições de assinatura definidas! Agora você pode criar o envelope.');
+                } else {
+                    const missingSignatories = signatories.filter(sig => !signatoriesWithPositions.has(sig.email));
+                    alert(`Ainda faltam posições para: ${missingSignatories.map(s => s.name).join(', ')}`);
+                }
+
+                toggleEnvelopeMode();
+            }
+        };
+
+        const createEnvelope = async () => {
+            console.log('=== INICIANDO CRIAÇÃO DO ENVELOPE ===');
+
+            const signatories = getSignatories();
+            const title = envelopeTitle.value.trim();
+
+            console.log('Signatários:', signatories);
+            console.log('Título:', title);
+            console.log('Posições de assinatura:', signaturePositions);
+            console.log('PDF atual:', currentPdfPath);
+
+            const signers = signatories.filter(s => s.type === 'signer');
+
+            if (signatories.length === 0) {
+                alert('Adicione pelo menos um signatário.');
+                return;
+            }
+
+            if (signers.length === 0) {
+                alert('Adicione pelo menos um signatário que precisa assinar o documento.');
+                return;
+            }
+
+            if (signaturePositions.length === 0) {
+                alert('Defina as posições de assinatura primeiro.');
+                return;
+            }
+
+            if (!currentPdfPath) {
+                alert('Faça o upload de um PDF primeiro.');
+                return;
+            }
+
+            try {
+                const payload = {
+                    pdfPath: currentPdfPath,
+                    signatories,
+                    signaturePositions,
+                    title
+                };
+
+                console.log('Enviando payload:', payload);
+
+                const response = await fetchWithAuth('/api/envelope/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('Resposta do servidor - Status:', response.status);
+
+                const result = await response.json();
+                console.log('Resposta do servidor - Dados:', result);
+
+                if (result.success) {
+                    let message = `✅ Envelope criado com sucesso!\n\n`;
+
+                    if (result.emailsSent) {
+                        message += `📧 ${result.emailsSent} email(s) enviado(s) com sucesso!\n\n`;
+                        message += `Os signatários receberão um email com o link para assinatura:\n\n`;
+                        result.signatories.forEach(signatory => {
+                            message += `• ${signatory.name} (${signatory.email}) - Status: ${signatory.status}\n`;
+                        });
+                    } else if (result.signatureLinks) {
+                        message += `Links de assinatura gerados:\n\n`;
+                        result.signatureLinks.forEach(link => {
+                            message += `${link.name} (${link.email}):\n${link.signatureLink}\n\n`;
+                        });
+                    }
+
+                    alert(message);
+
+                    // Reset form
+                    signaturePositions = [];
+                    document.querySelectorAll('.signature-overlay').forEach(el => el.remove());
+                    envelopeTitle.value = '';
+                    document.querySelectorAll('.signatory-name, .signatory-email').forEach(input => input.value = '');
+                } else {
+                    console.error('Erro na resposta:', result);
+                    alert('Erro ao criar envelope: ' + (result.error || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                alert('Erro ao criar envelope: ' + error.message);
+            }
+        };
+
+        // Canvas click for placing envelope signature positions
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (envelopeMode) {
+                addEnvelopeSignaturePosition(x, y);
+            }
+        });
+
+        // Add global variable for current PDF path
+        let currentPdfPath = '';
+
+        // Clear envelope positions
+        const clearEnvelopePositions = () => {
+            if (signaturePositions.length === 0) {
+                alert('Não há posições de assinatura para remover.');
+                return;
+            }
+
+            if (confirm(`Tem certeza que deseja remover todas as ${signaturePositions.length} posições de assinatura?`)) {
+                signaturePositions = [];
+                document.querySelectorAll('.signature-overlay').forEach(el => {
+                    if (el.id.startsWith('envelope_pos_')) {
+                        el.remove();
+                    }
+                });
+                updateEnvelopeInfo();
+            }
+        };
+
+        // Envelope event listeners
+        addSignatoryBtn.addEventListener('click', addSignatory);
+        toggleEnvelopeModeBtn.addEventListener('click', toggleEnvelopeMode);
+        createEnvelopeBtn.addEventListener('click', createEnvelope);
+        document.getElementById('clearEnvelopePositionsBtn').addEventListener('click', clearEnvelopePositions);
+
+        // Make removeSignatory global
+        window.removeSignatory = removeSignatory;
+
+        // File upload handling
+        const uploadFile = (file) => {
+            if (file.type !== 'application/pdf') {
+                showError('Por favor, selecione apenas arquivos PDF.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            showLoading();
+
+            fetchWithAuth('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadPDF(data.path);
+                } else {
+                    showError(data.error || 'Erro ao fazer upload do arquivo.');
+                }
+            })
+            .catch(err => {
+                showError('Erro ao fazer upload: ' + err.message);
+            });
+        };
+
+        // Load PDF
+        const loadPDF = (url) => {
+            currentPdfPath = url;
+            pdfjsLib.getDocument(url).promise.then(pdf => {
+                pdfDoc = pdf;
+                pageNum = 1;
+                scale = 1.0;
+                zoomLevel.textContent = '100%';
+
+                hideLoading();
+                showPdfViewer();
+                renderPage(pageNum);
+            }).catch(err => {
+                showError('Erro ao carregar PDF: ' + err.message);
+            });
+        };
+
+        // UI functions
+        const showLoading = () => {
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            pdfViewer.style.display = 'none';
+        };
+
+        const hideLoading = () => {
+            loading.style.display = 'none';
+        };
+
+        const showPdfViewer = () => {
+            pdfViewer.style.display = 'block';
+            error.style.display = 'none';
+        };
+
+        const showError = (message) => {
+            error.textContent = message;
+            error.style.display = 'block';
+            loading.style.display = 'none';
+            pdfViewer.style.display = 'none';
+        };
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        });
+    </script>
+</body>
+</html>
