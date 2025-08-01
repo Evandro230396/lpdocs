@@ -1002,7 +1002,7 @@ app.post('/api/envelope/create', authenticateToken, async (req, res) => {
           console.log(`Enviando email de assinatura para: ${signatory.email}`);
 
           const emailResult = await resend.emails.send({
-            from: 'noreply@mvmconversor.com.br',
+            from: 'assina@lpdocs.com.br',
             to: signatory.email,
             subject: `📋 Documento para Assinatura: ${title}`,
             html: `
